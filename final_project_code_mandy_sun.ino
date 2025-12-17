@@ -8,6 +8,7 @@
 const int indexB = A4;
 const int palmB = A3;
 
+// lines for each individual digit
 const int a = 0b00000001;
 const int b = 0b00000010;
 const int c = 0b00000100;
@@ -41,7 +42,6 @@ TM1637Display display(CLK, DIO);
 
 void setup()
 {
-  // put your setup code here, to run once:
   pinMode(indexB, INPUT_PULLUP);
   pinMode(palmB, INPUT_PULLUP);
 
@@ -50,6 +50,7 @@ void setup()
 
 void loop()
 {
+  // define arrays to hold information for each digit
   uint8_t data[] = { 0xff, 0xff, 0xff, 0xff };
   uint8_t blank[] = { 0b00111111, 0b00111111, 0b00111111, 0b00111111 };
   display.setBrightness(0x0f);
@@ -57,8 +58,10 @@ void loop()
   int num = 0;
   int pnum = num;
   bool updated = false;
+
+  // start loop for the program
   while(true){
-    if(analogRead(indexB) < 100 && analogRead(palmB) < 100) { // reset if pressure is high on both sensors
+    if(analogRead(indexB) < 100 && analogRead(palmB) < 100) { // reset counter if pressure is high on both sensors
       num = 0;
       for (int x = 0; x < 4; x++){
         blank[x] = digits[0];
@@ -70,6 +73,7 @@ void loop()
       continue;
     }
 
+    // average input to reduce extra noise in program
     float avgIndex = 0;
     float avgPalm = 0;
 
@@ -87,14 +91,14 @@ void loop()
     Serial.println((avgPalm));
     
      // hand must be bent and finger must be bending to increment count
-    if ((avgPalm <= 350 && avgIndex <= 235) && !updated){
+    if ((avgPalm <= 350 && avgIndex <= 250) && !updated){
       num++;
-      Serial.println("^^^VALID^^^");
 
       for (int x = 0; x < 4; x++){
         blank[x] = 0;
       }
 
+      // calculate which digit to display
       int ones = num % 10;
       int tens = (num % 100) / 10;
       int hund = (num % 1000) / 100;
@@ -107,6 +111,7 @@ void loop()
       display.setSegments(blank);
       updated = true;
     } else if ((avgPalm <= 350 && avgIndex <= 235) && updated) {
+      // if numbers are still low, don't increment count if we already updated
       display.setSegments(blank);
       updated = true;
     } else {
@@ -116,7 +121,4 @@ void loop()
     pnum = num;
     delay(200);
   }
-
-  display.setSegments(SEG_DONE);
-  delay(1000);
 }
